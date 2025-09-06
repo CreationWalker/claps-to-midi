@@ -1,0 +1,1420 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chiptune Clap2MIDI с импортом MIDI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6a5acd;
+            --secondary: #48d1cc;
+            --dark: #1a1a2e;
+            --light: #f8f9fa;
+            --accent: #ffb6c1;
+            --success: #20b2aa;
+            --warning: #ffd166;
+            --danger: #f08080;
+            --mario: #e52521;
+            --zelda: #f7d038;
+            --sonic: #5c9dd0;
+            --metroid: #7e57c2;
+            --potter: #740001;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: var(--light);
+            min-height: 100vh;
+            padding: 15px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            border: 4px solid var(--primary);
+            border-radius: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            box-shadow: 0 0 30px rgba(106, 90, 205, 0.4);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 2px solid var(--secondary);
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+            color: var(--accent);
+            text-shadow: 2px 2px 0 #000;
+            font-weight: 700;
+        }
+        
+        .tagline {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            color: var(--secondary);
+            font-weight: 300;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .tagline {
+                font-size: 1rem;
+            }
+        }
+        
+        .panel {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid var(--accent);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .panel-title {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--secondary);
+            font-weight: 600;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--accent);
+            font-size: 1rem;
+        }
+        
+        input[type="text"], input[type="number"], select, input[type="range"] {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 2px solid var(--success);
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        input[type="text"]:focus, input[type="number"]:focus, select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 10px rgba(255, 182, 193, 0.5);
+            outline: none;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .file-upload {
+            display: block;
+            padding: 15px;
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+        
+        .file-upload:hover {
+            border-color: var(--secondary);
+            background: rgba(72, 209, 204, 0.1);
+        }
+        
+        .instruments-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .visualization {
+            margin-top: 20px;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            border: 2px solid var(--primary);
+        }
+        
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+        
+        button {
+            padding: 12px 18px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            border: 2px solid;
+            font-size: 1rem;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border-color: #8470ff;
+        }
+        
+        .btn-primary:hover {
+            background: #8470ff;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(106, 90, 205, 0.4);
+        }
+        
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+            border-color: #5f9ea0;
+        }
+        
+        .btn-secondary:hover {
+            background: #5f9ea0;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(72, 209, 204, 0.4);
+        }
+        
+        .btn-accent {
+            background: var(--accent);
+            color: var(--dark);
+            border-color: #ffc0cb;
+        }
+        
+        .btn-accent:hover {
+            background: #ffc0cb;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 182, 193, 0.4);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid;
+            font-size: 1rem;
+        }
+        
+        .success {
+            background: rgba(32, 178, 170, 0.2);
+            border-color: var(--success);
+        }
+        
+        .error {
+            background: rgba(240, 128, 128, 0.2);
+            border-color: var(--danger);
+        }
+        
+        .processing {
+            background: rgba(255, 209, 102, 0.2);
+            border-color: var(--warning);
+        }
+        
+        .clap-marker {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background: var(--accent);
+            transform: translateX(-50%);
+            box-shadow: 0 0 10px var(--accent);
+        }
+        
+        .progress-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 12px;
+        }
+        
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .presets {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .preset-btn {
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .preset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .mario-preset {
+            background: rgba(229, 37, 33, 0.2);
+            border-color: var(--mario);
+            color: #ff8a87;
+        }
+        
+        .zelda-preset {
+            background: rgba(247, 208, 56, 0.2);
+            border-color: var(--zelda);
+            color: #ffeb3b;
+        }
+        
+        .sonic-preset {
+            background: rgba(92, 157, 208, 0.2);
+            border-color: var(--sonic);
+            color: #90caf9;
+        }
+        
+        .metroid-preset {
+            background: rgba(126, 87, 194, 0.2);
+            border-color: var(--metroid);
+            color: #b39ddb;
+        }
+        
+        .tetris-preset {
+            background: rgba(106, 90, 205, 0.2);
+            border-color: var(--primary);
+            color: #a291fb;
+        }
+        
+        .potter-preset {
+            background: rgba(116, 0, 1, 0.2);
+            border-color: var(--potter);
+            color: #ff9999;
+        }
+        
+        .game-info {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            border: 1px solid;
+            line-height: 1.4;
+        }
+        
+        .mario-info {
+            background: rgba(229, 37, 33, 0.1);
+            border-color: var(--mario);
+        }
+        
+        .zelda-info {
+            background: rgba(247, 208, 56, 0.1);
+            border-color: var(--zelda);
+        }
+        
+        .potter-info {
+            background: rgba(116, 0, 1, 0.1);
+            border-color: var(--potter);
+        }
+        
+        .game-title {
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: var(--accent);
+        }
+        
+        .quality-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .slider-value {
+            text-align: center;
+            margin-top: 6px;
+            font-size: 0.9rem;
+            color: var(--secondary);
+        }
+        
+        .sound-controls {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        
+        .icon {
+            font-size: 1.3rem;
+            margin-right: 8px;
+            color: var(--secondary);
+        }
+        
+        .highlight {
+            color: var(--accent);
+            font-weight: 600;
+        }
+        
+        .import-section {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border: 1px solid var(--primary);
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 12px;
+            border-bottom: 1px solid var(--primary);
+        }
+        
+        .tab {
+            padding: 8px 15px;
+            cursor: pointer;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            margin-right: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .tab.active {
+            background: rgba(106, 90, 205, 0.3);
+            border-color: var(--primary);
+            color: var(--accent);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Стили для мобильных устройств */
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .panel {
+                padding: 15px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .presets {
+                grid-template-columns: 1fr;
+            }
+            
+            .instruments-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .quality-controls {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Стили для очень маленьких экранов */
+        @media (max-width: 400px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .panel-title {
+                font-size: 1.2rem;
+            }
+            
+            .file-upload {
+                padding: 12px;
+            }
+        }
+    </style>
+    <!-- FileSaver.js для сохранения файлов -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <!-- Tone.js для работы с аудио -->
+    <script src="https://cdn.jsdelivr.net/npm/tone@14.7.77/build/Tone.min.js"></script>
+    <!-- tonejs/midi для работы с MIDI -->
+    <script src="https://cdn.jsdelivr.net/npm/@tonejs/midi@2.0.28"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-music icon"></i>CHIPTUNE CLAP2MIDI С ИМПОРТОМ</h1>
+            <p class="tagline">Преврати хлопки в мелодии и импортируй MIDI файлы</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="panel">
+                <div class="panel-title">
+                    <i class="fas fa-sliders-h"></i>
+                    <span>НАСТРОЙКИ</span>
+                </div>
+                
+                <div class="form-group">
+                    <label for="audioFile">
+                        <i class="fas fa-file-audio icon"></i>АУДИОФАЙЛ С ХЛОПКАМИ
+                    </label>
+                    <label for="audioFile" class="file-upload">
+                        <i class="fas fa-upload"></i>
+                        <span>ВЫБЕРИТЕ АУДИОФАЙЛ</span>
+                    </label>
+                    <input type="file" id="audioFile" accept="audio/*">
+                    <div id="fileName" style="margin-top: 8px; font-style: italic; font-size: 0.9rem;"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="bpm">
+                        <i class="fas fa-tachometer-alt icon"></i>ТЕМП (BPM)
+                    </label>
+                    <input type="number" id="bpm" value="140" min="60" max="200">
+                </div>
+                
+                <div class="quality-controls">
+                    <div class="slider-container">
+                        <label for="sensitivity">
+                            <i class="fas fa-hearing icon"></i>ЧУВСТВИТЕЛЬНОСТЬ
+                        </label>
+                        <input type="range" id="sensitivity" min="1" max="10" value="6">
+                        <div class="slider-value" id="sensitivity-value">6</div>
+                    </div>
+                    
+                    <div class="slider-container">
+                        <label for="quality">
+                            <i class="fas fa-star icon"></i>КАЧЕСТВО ЗВУКА
+                        </label>
+                        <input type="range" id="quality" min="1" max="10" value="9">
+                        <div class="slider-value" id="quality-value">9</div>
+                    </div>
+                </div>
+                
+                <div class="sound-controls">
+                    <div class="form-group">
+                        <label for="volume">
+                            <i class="fas fa-volume-up icon"></i>ГРОМКОСТЬ
+                        </label>
+                        <input type="range" id="volume" min="0" max="10" value="7">
+                        <div class="slider-value" id="volume-value">7</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="brightness">
+                            <i class="fas fa-sun icon"></i>ЯРКОСТЬ ЗВУКА
+                        </label>
+                        <input type="range" id="brightness" min="0" max="10" value="6">
+                        <div class="slider-value" id="brightness-value">6</div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <i class="fas fa-magic icon"></i>ВЫБЕРИТЕ МЕЛОДИЮ
+                    </label>
+                    <div class="presets">
+                        <div class="preset-btn tetris-preset" data-preset="tetris">
+                            TETRIS
+                        </div>
+                        <div class="preset-btn potter-preset" data-preset="potter">
+                            HARRY POTTER
+                        </div>
+                        <div class="preset-btn mario-preset" data-preset="mario">
+                            SUPER MARIO
+                        </div>
+                        <div class="preset-btn zelda-preset" data-preset="zelda">
+                            THE LEGEND OF ZELDA
+                        </div>
+                        <div class="preset-btn sonic-preset" data-preset="sonic">
+                            SONIC
+                        </div>
+                        <div class="preset-btn metroid-preset" data-preset="metroid">
+                            METROID
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="game-info mario-info">
+                    <div class="game-title">Super Mario Bros. Theme</div>
+                    <div>Одна из самых узнаваемых игровых мелодий в истории. Написана Кодзи Кондо для NES в 1985 году.</div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-title">
+                    <i class="fas fa-music"></i>
+                    <span>ИНСТРУМЕНТЫ И НАСТРОЙКИ</span>
+                </div>
+                
+                <div class="instruments-grid">
+                    <div class="form-group">
+                        <label for="clapInstrument">
+                            <i class="fas fa-drum icon"></i>ХЛОПКИ
+                        </label>
+                        <select id="clapInstrument">
+                            <option value="118">Applause (118)</option>
+                            <option value="115">Drum Square (115)</option>
+                            <option value="0">Soft Square (0)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="harmonyInstrument">
+                            <i class="fas fa-guitar icon"></i>ГОЛОС 1
+                        </label>
+                        <select id="harmonyInstrument">
+                            <option value="80">Square Lead (80)</option>
+                            <option value="81">Warm Square (81)</option>
+                            <option value="13">Xylophone (13)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="clapPitches">
+                        <i class="fas fa-drumstick-bite icon"></i>НОТЫ ДЛЯ ХЛОПКОВ (MIDI)
+                    </label>
+                    <input type="text" id="clapPitches" value="76,71,72,74,76,74,72,71,69,69,72,76,81,79,76,74,72,71,72,74,76,71,69,67,69,71,74,72,71,69">
+                </div>
+                
+                <div class="form-group">
+                    <label for="harmonyChords">
+                        <i class="fas fa-layer-group icon"></i>АККОРДЫ ГАРМОНИИ (MIDI)
+                    </label>
+                    <input type="text" id="harmonyChords" value="64,67,71;71,75,78;64,67,71;71,75,78;72,76,79;67,71,74;72,76,79;67,71,74;69,72,76;64,68,71;69,72,76;64,68,71;65,69,72;72,76,79;65,69,72;72,76,79;72,76,79;67,71,74;72,76,79;67,71,74;64,67,71;71,75,78;64,67,71;71,75,78">
+                </div>
+                
+                <div class="import-section">
+                    <div class="tabs">
+                        <div class="tab active" data-tab="import-full">Полный импорт MIDI</div>
+                    </div>
+                    
+                    <div class="tab-content active" id="import-full">
+                        <label for="importMidiFile">
+                            <i class="fas fa-file-import icon"></i>Импорт питчей и аккордов из MIDI
+                        </label>
+                        <label for="importMidiFile" class="file-upload">
+                            <i class="fas fa-upload"></i>
+                            <span>ВЫБЕРИТЕ MIDI ФАЙЛ</span>
+                        </label>
+                        <input type="file" id="importMidiFile" accept=".mid,.midi">
+                        
+                        <div class="slider-container">
+                            <label for="clapTrackIndex">
+                                Номер трека для хлопков:
+                            </label>
+                            <input type="number" id="clapTrackIndex" value="0" min="0" max="15">
+                        </div>
+                        
+                        <div class="slider-container">
+                            <label for="harmonyTrackIndex">
+                                Номер трека для гармонии:
+                            </label>
+                            <input type="number" id="harmonyTrackIndex" value="1" min="0" max="15">
+                        </div>
+                        
+                        <div class="slider-container">
+                            <label for="chordTolerance">
+                                Точность определения аккордов (сек):
+                            </label>
+                            <input type="number" id="chordTolerance" value="0.05" step="0.01" min="0.01" max="0.2">
+                        </div>
+                        
+                        <button id="importMidiBtn" class="btn-accent">
+                            <i class="fas fa-import"></i>
+                            <span>Импортировать из MIDI</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="highQuality" checked>
+                        <i class="fas fa-certificate icon"></i>ВЫСОКОЕ КАЧЕСТВО СИНТЕЗА
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="softClipping" checked>
+                        <i class="fas fa-wave-square icon"></i>МЯГКОЕ ОГРАНИЧЕНИЕ
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="warmSound" checked>
+                        <i class="fas fa-fire icon"></i>ТЁПЛЫЙ ЗВУК
+                    </label>
+                </div>
+                
+                <div class="game-info potter-info">
+                    <div class="game-title">Hedwig's Theme (Гарри Поттер)</div>
+                    <div>Знаменитая тема из фильмов о Гарри Поттере, написанная Джоном Уильямсом. Волшебная и запоминающаяся мелодия.</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <div class="panel-title">
+                <i class="fas fa-wave-square"></i>
+                <span>ВИЗУАЛИЗАЦИЯ И УПРАВЛЕНИЕ</span>
+            </div>
+            
+            <div class="visualization">
+                <canvas id="waveformCanvas"></canvas>
+                <div id="clapMarkers"></div>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress" id="processingProgress"></div>
+            </div>
+            
+            <div class="controls">
+                <button id="processBtn" class="btn-primary">
+                    <i class="fas fa-cogs"></i>
+                    <span>АНАЛИЗИРОВАТЬ</span>
+                </button>
+                
+                <button id="playBtn" class="btn-secondary" disabled>
+                    <i class="fas fa-play"></i>
+                    <span>ВОСПРОИЗВЕСТИ</span>
+                </button>
+                
+                <button id="stopBtn" class="btn-secondary" disabled>
+                    <i class="fas fa-stop"></i>
+                    <span>ОСТАНОВИТЬ</span>
+                </button>
+                
+                <button id="downloadBtn" class="btn-accent" disabled>
+                    <i class="fas fa-download"></i>
+                    <span>Скачать MIDI</span>
+                </button>
+            </div>
+            
+            <div id="status" class="status hidden">
+                <i class="fas fa-info-circle icon"></i>
+                <span>Загрузите аудиофайл для начала работы</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Элементы DOM
+            const audioFileInput = document.getElementById('audioFile');
+            const fileNameDiv = document.getElementById('fileName');
+            const clapPitchesInput = document.getElementById('clapPitches');
+            const harmonyChordsInput = document.getElementById('harmonyChords');
+            const bpmInput = document.getElementById('bpm');
+            const clapInstrumentSelect = document.getElementById('clapInstrument');
+            const harmonyInstrumentSelect = document.getElementById('harmonyInstrument');
+            const processBtn = document.getElementById('processBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const playBtn = document.getElementById('playBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const waveformCanvas = document.getElementById('waveformCanvas');
+            const clapMarkersDiv = document.getElementById('clapMarkers');
+            const statusDiv = document.getElementById('status');
+            const progressBar = document.getElementById('processingProgress');
+            const presetButtons = document.querySelectorAll('.preset-btn');
+            const gameInfoDivs = document.querySelectorAll('.game-info');
+            const sensitivitySlider = document.getElementById('sensitivity');
+            const sensitivityValue = document.getElementById('sensitivity-value');
+            const qualitySlider = document.getElementById('quality');
+            const qualityValue = document.getElementById('quality-value');
+            const volumeSlider = document.getElementById('volume');
+            const volumeValue = document.getElementById('volume-value');
+            const brightnessSlider = document.getElementById('brightness');
+            const brightnessValue = document.getElementById('brightness-value');
+            const highQualityCheckbox = document.getElementById('highQuality');
+            const softClippingCheckbox = document.getElementById('softClipping');
+            const warmSoundCheckbox = document.getElementById('warmSound');
+            
+            // Элементы импорта
+            const importMidiFileInput = document.getElementById('importMidiFile');
+            const importMidiBtn = document.getElementById('importMidiBtn');
+            const clapTrackIndexInput = document.getElementById('clapTrackIndex');
+            const harmonyTrackIndexInput = document.getElementById('harmonyTrackIndex');
+            const chordToleranceInput = document.getElementById('chordTolerance');
+            
+            let audioContext;
+            let audioBuffer;
+            let detectedClaps = [];
+            let midiBlob = null;
+            let synth = null;
+            let reverb = null;
+            let chorus = null;
+            let compressor = null;
+            
+            // Пресеты для известных чиптюн-мелодий
+            const presets = {
+                tetris: {
+                    bpm: 140,
+                    clapPitches: "76,71,72,74,76,74,72,71,69,69,72,76,81,79,76,74,72,71,72,74,76,71,69,67,69,71,74,72,71,69",
+                    harmonyChords: "64,67,71;71,75,78;64,67,71;71,75,78;72,76,79;67,71,74;72,76,79;67,71,74;69,72,76;64,68,71;69,72,76;64,68,71;65,69,72;72,76,79;65,69,72;72,76,79;72,76,79;67,71,74;72,76,79;67,71,74;64,67,71;71,75,78;64,67,71;71,75,78",
+                    description: "Тема Тетриса (Korobeiniki) - знаменитая русская мелодия"
+                },
+                potter: {
+                    bpm: 100,
+                    clapPitches: "67,69,71,72,74,76,74,72,71,69,67,64,62,64,67,69,71,72,71,69,67",
+                    harmonyChords: "60,64,67;62,65,69;64,67,71;65,69,72;67,71,74;69,72,76;71,74,78;72,76,79;74,77,81;76,79,83",
+                    description: "Hedwig's Theme из Гарри Поттера - волшебная и запоминающаяся мелодия"
+                },
+                mario: {
+                    bpm: 140,
+                    clapPitches: "76,76,76,72,76,79,67,72,67,64,69,71,69,67,76,79,81,77,79,76",
+                    harmonyChords: "60,64,67;67,71,74;69,72,76;64,67,71;65,69,72;60,64,67;65,69,72;67,71,74",
+                    description: "Тема из Super Mario Bros - одна из самых узнаваемых игровых мелодий"
+                },
+                zelda: {
+                    bpm: 120,
+                    clapPitches: "72,76,79,72,76,79,72,76,79,72,76,79,71,74,78,71,74,78,71,74,78",
+                    harmonyChords: "60,64,67;65,69,72;67,71,74;60,64,67;65,69,72;67,71,74;60,64,67",
+                    description: "Тема из The Legend of Zelda - эпическая и запоминающаяся мелодия"
+                },
+                sonic: {
+                    bpm: 160,
+                    clapPitches: "72,72,72,76,79,72,72,72,76,79,72,72,72,76,79,81,79,76",
+                    harmonyChords: "60,63,67;62,65,69;64,67,71;60,63,67;62,65,69;64,67,71;60,63,67",
+                    description: "Тема из Sonic the Hedgehog - быстрая и энергичная мелодия"
+                },
+                metroid: {
+                    bpm: 100,
+                    clapPitches: "60,64,67,64,60,64,67,64,60,64,67,71,67,64,60,57,60",
+                    harmonyChords: "60,63,67;62,65,69;64,67,71;65,68,72;67,70,74;65,68,72;64,67,71",
+                    description: "Тема из Metroid - мрачная и атмосферная мелодия"
+                }
+            };
+            
+            // Обновление значений слайдеров
+            sensitivitySlider.addEventListener('input', function() {
+                sensitivityValue.textContent = this.value;
+            });
+            
+            qualitySlider.addEventListener('input', function() {
+                qualityValue.textContent = this.value;
+            });
+            
+            volumeSlider.addEventListener('input', function() {
+                volumeValue.textContent = this.value;
+                if (synth) {
+                    Tone.Destination.volume.value = Tone.gainToDb(this.value / 10);
+                }
+            });
+            
+            brightnessSlider.addEventListener('input', function() {
+                brightnessValue.textContent = this.value;
+            });
+            
+            // Обработка загрузки аудиофайла
+            audioFileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                fileNameDiv.textContent = file.name;
+                
+                const fileReader = new FileReader();
+                fileReader.onload = function(e) {
+                    if (!audioContext) {
+                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    }
+                    
+                    audioContext.decodeAudioData(e.target.result)
+                        .then(function(buffer) {
+                            audioBuffer = buffer;
+                            drawWaveform(buffer);
+                            statusDiv.innerHTML = '<i class="fas fa-check-circle icon"></i><span>Аудио загружено. Нажмите "Анализировать" для обработки.</span>';
+                            statusDiv.className = 'status success';
+                            statusDiv.classList.remove('hidden');
+                        })
+                        .catch(function(err) {
+                            statusDiv.innerHTML = '<i class="fas fa-exclamation-circle icon"></i><span>Ошибка загрузки аудио: ' + err.message + '</span>';
+                            statusDiv.className = 'status error';
+                            statusDiv.classList.remove('hidden');
+                        });
+                };
+                
+                fileReader.readAsArrayBuffer(file);
+            });
+            
+            // Функция для импорта из MIDI файла
+            importMidiBtn.addEventListener('click', function() {
+                const file = importMidiFileInput.files[0];
+                if (!file) {
+                    statusDiv.innerHTML = '<i class="fas fa-exclamation-circle icon"></i><span>Выберите MIDI файл для импорта</span>';
+                    statusDiv.className = 'status error';
+                    statusDiv.classList.remove('hidden');
+                    return;
+                }
+                
+                const clapTrackIndex = parseInt(clapTrackIndexInput.value);
+                const harmonyTrackIndex = parseInt(harmonyTrackIndexInput.value);
+                const tolerance = parseFloat(chordToleranceInput.value);
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const midi = new Midi(e.target.result);
+                        
+                        // Импорт питчей для хлопков
+                        if (midi.tracks.length > clapTrackIndex) {
+                            const track = midi.tracks[clapTrackIndex];
+                            const pitches = track.notes.map(note => note.midi);
+                            clapPitchesInput.value = pitches.join(',');
+                        } else {
+                            statusDiv.innerHTML = `<i class="fas fa-exclamation-circle icon"></i><span>В MIDI файле нет трека с номером ${clapTrackIndex} для хлопков</span>`;
+                            statusDiv.className = 'status error';
+                            statusDiv.classList.remove('hidden');
+                            return;
+                        }
+                        
+                        // Импорт аккордов для гармонии
+                        if (midi.tracks.length > harmonyTrackIndex) {
+                            const track = midi.tracks[harmonyTrackIndex];
+                            const chords = [];
+                            let currentChord = [];
+                            let currentTime = -1;
+                            
+                            // Сортируем ноты по времени
+                            track.notes.sort((a, b) => a.time - b.time);
+                            
+                            // Группируем ноты в аккорды по времени
+                            for (const note of track.notes) {
+                                if (Math.abs(note.time - currentTime) > tolerance) {
+                                    if (currentChord.length > 0) {
+                                        chords.push(currentChord);
+                                    }
+                                    currentChord = [note.midi];
+                                    currentTime = note.time;
+                                } else {
+                                    currentChord.push(note.midi);
+                                }
+                            }
+                            
+                            if (currentChord.length > 0) {
+                                chords.push(currentChord);
+                            }
+                            
+                            // Форматируем аккорды в строку
+                            const chordString = chords.map(chord => chord.join(',')).join(';');
+                            harmonyChordsInput.value = chordString;
+                        } else {
+                            statusDiv.innerHTML = `<i class="fas fa-exclamation-circle icon"></i><span>В MIDI файле нет трека с номером ${harmonyTrackIndex} для гармонии</span>`;
+                            statusDiv.className = 'status error';
+                            statusDiv.classList.remove('hidden');
+                            return;
+                        }
+                        
+                        statusDiv.innerHTML = `<i class="fas fa-check-circle icon"></i><span>Импортированы питчи из трека ${clapTrackIndex} и аккорды из трека ${harmonyTrackIndex}</span>`;
+                        statusDiv.className = 'status success';
+                        statusDiv.classList.remove('hidden');
+                    } catch (err) {
+                        statusDiv.innerHTML = '<i class="fas fa-exclamation-circle icon"></i><span>Ошибка обработки MIDI файла: ' + err.message + '</span>';
+                        statusDiv.className = 'status error';
+                        statusDiv.classList.remove('hidden');
+                    }
+                };
+                
+                reader.readAsArrayBuffer(file);
+            });
+            
+            // Отрисовка waveform
+            function drawWaveform(buffer) {
+                const width = waveformCanvas.width;
+                const height = waveformCanvas.height;
+                const ctx = waveformCanvas.getContext('2d');
+                
+                // Очистка canvas
+                ctx.clearRect(0, 0, width, height);
+                
+                // Создаем градиент для waveform
+                const gradient = ctx.createLinearGradient(0, 0, width, 0);
+                gradient.addColorStop(0, '#6a5acd');
+                gradient.addColorStop(0.5, '#48d1cc');
+                gradient.addColorStop(1, '#ffb6c1');
+                
+                // Отрисовка waveform
+                const channelData = buffer.getChannelData(0);
+                const step = Math.ceil(channelData.length / width);
+                
+                ctx.beginPath();
+                ctx.moveTo(0, height / 2);
+                
+                for (let i = 0; i < width; i++) {
+                    const min = channelData[i * step];
+                    ctx.lineTo(i, (1 + min) * height / 2);
+                }
+                
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                // Добавляем свечение
+                ctx.shadowColor = '#48d1cc';
+                ctx.shadowBlur = 15;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+            
+            // Отрисовка обнаруженных хлопков
+            function drawClapMarkers(clapTimes, duration) {
+                clapMarkersDiv.innerHTML = '';
+                
+                for (const time of clapTimes) {
+                    const marker = document.createElement('div');
+                    marker.className = 'clap-marker';
+                    marker.style.left = `${(time / duration) * 100}%`;
+                    clapMarkersDiv.appendChild(marker);
+                }
+            }
+            
+            // Улучшенный алгоритм обнаружения хлопков с уменьшением шума
+            function detectClaps(buffer) {
+                const channelData = buffer.getChannelData(0);
+                const sampleRate = buffer.sampleRate;
+                const clapTimes = [];
+                
+                // Получаем настройки чувствительности
+                const sensitivity = parseFloat(sensitivitySlider.value);
+                const quality = parseFloat(qualitySlider.value);
+                
+                // Улучшенный алгоритм обнаружения хлопков
+                const windowSize = Math.floor(0.01 * sampleRate);
+                // Динамический порог на основе чувствительности
+                const threshold = 0.03 + (sensitivity * 0.02); 
+                const minDistance = Math.floor(0.1 * sampleRate);
+                
+                let lastClapPos = -minDistance;
+                
+                // Вычисляем среднюю энергию сигнала для базового уровня
+                let totalEnergy = 0;
+                for (let i = 0; i < channelData.length; i++) {
+                    totalEnergy += Math.abs(channelData[i]);
+                }
+                const averageEnergy = totalEnergy / channelData.length;
+                
+                for (let i = 0; i < channelData.length - windowSize; i += windowSize) {
+                    let max = 0;
+                    
+                    // Находим максимальное значение в окне
+                    for (let j = 0; j < windowSize; j++) {
+                        const value = Math.abs(channelData[i + j]);
+                        if (value > max) max = value;
+                    }
+                    
+                    // Динамическая регулировка порога на основе средней энергии
+                    const effectiveThreshold = threshold * (1 + averageEnergy);
+                    
+                    // Если превышен порог и прошло достаточно времени с последнего хлопка
+                    if (max > effectiveThreshold && (i - lastClapPos) >= minDistance) {
+                        const time = i / sampleRate;
+                        clapTimes.push(time);
+                        lastClapPos = i;
+                        
+                        // Обновление прогресс-бара
+                        progressBar.style.width = `${(i / channelData.length) * 100}%`;
+                    }
+                }
+                
+                return clapTimes;
+            }
+            
+            // Создание MIDI-файла с помощью tonejs/midi
+            function createMIDI(clapTimes, clapPitches, harmonyChords, bpm, clapInstrument, harmonyInstrument) {
+                const midi = new Midi();
+                midi.header.setTempo(parseInt(bpm));
+                
+                // Создаем трек для хлопков
+                const clapTrack = midi.addTrack();
+                clapTrack.instrument.number = parseInt(clapInstrument);
+                
+                // Добавляем хлопки с небольшими вариациями для естественности
+                for (let i = 0; i < clapTimes.length; i++) {
+                    const time = clapTimes[i];
+                    const pitch = clapPitches[i % clapPitches.length];
+                    
+                    // Добавляем небольшие случайные вариации для естественности
+                    const velocity = 0.7 + Math.random() * 0.2;
+                    const duration = 0.1 + Math.random() * 0.05;
+                    const timeOffset = (Math.random() - 0.5) * 0.02;
+                    
+                    clapTrack.addNote({
+                        midi: pitch,
+                        time: time + timeOffset,
+                        duration: duration,
+                        velocity: velocity
+                    });
+                }
+                
+                // Добавляем гармонию, если есть аккорды
+                if (harmonyChords && harmonyChords.length > 0) {
+                    const harmonyTrack = midi.addTrack();
+                    harmonyTrack.instrument.number = parseInt(harmonyInstrument);
+                    
+                    for (let i = 0; i < clapTimes.length; i++) {
+                        const clapTime = clapTimes[i];
+                        const chord = harmonyChords[i % harmonyChords.length];
+                        
+                        if (chord && chord.length > 0) {
+                            for (const note of chord) {
+                                // Добавляем небольшие случайные вариации для естественности
+                                const velocity = 0.5 + Math.random() * 0.2;
+                                const duration = 0.5 + Math.random() * 0.2;
+                                const timeOffset = (Math.random() - 0.5) * 0.03;
+                                
+                                harmonyTrack.addNote({
+                                    midi: note,
+                                    time: clapTime + timeOffset,
+                                    duration: duration,
+                                    velocity: velocity
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                // Конвертируем в blob
+                const midiBlob = new Blob([midi.toArray()], { type: 'audio/midi' });
+                return midiBlob;
+            }
+            
+            // Воспроизведение MIDI с помощью Tone.js с улучшенным качеством
+            function playMIDI(midiBlob) {
+                if (synth) {
+                    synth.dispose();
+                }
+                
+                // Получаем настройки качества
+                const quality = parseFloat(qualitySlider.value);
+                const volume = parseFloat(volumeSlider.value);
+                const brightness = parseFloat(brightnessSlider.value);
+                const highQuality = highQualityCheckbox.checked;
+                const softClipping = softClippingCheckbox.checked;
+                const warmSound = warmSoundCheckbox.checked;
+                
+                // Создаем эффекты
+                if (reverb) reverb.dispose();
+                if (chorus) chorus.dispose();
+                if (compressor) compressor.dispose();
+                
+                // Основная цепочка эффектов
+                compressor = new Tone.Compressor({
+                    threshold: -20,
+                    ratio: 4,
+                    attack: 0.1,
+                    release: 0.2
+                }).toDestination();
+                
+                reverb = new Tone.Reverb({
+                    decay: 2.5,
+                    preDelay: 0.01,
+                    wet: 0.2
+                }).connect(compressor);
+                
+                chorus = new Tone.Chorus({
+                    frequency: 1.5,
+                    delayTime: 3.5,
+                    depth: 0.7,
+                    wet: 0.3
+                }).connect(reverb);
+                
+                // Устанавливаем громкость
+                Tone.Destination.volume.value = Tone.gainToDb(volume / 10);
+                
+                // Создаем синтезаторы для разных инструментов с улучшенными настройками
+                const clapSynth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { 
+                        type: "triangle",
+                        modulationType: "sine",
+                        modulationIndex: 0.5
+                    },
+                    envelope: {
+                        attack: 0.001,
+                        decay: 0.1,
+                        sustain: 0,
+                        release: 0.1
+                    }
+                }).connect(chorus);
+                
+                const harmonySynth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { 
+                        type: "fatsawtooth",
+                        count: 3,
+                        spread: 30
+                    },
+                    envelope: {
+                        attack: 0.01,
+                        decay: 0.1,
+                        sustain: 0.5,
+                        release: 0.5
+                    },
+                    filter: {
+                        type: "lowpass",
+                        frequency: 1200,
+                        rolloff: -12,
+                        Q: 1
+                    }
+                }).connect(chorus);
+                
+                // Применяем дополнительные настройки качества
+                if (highQuality) {
+                    harmonySynth.set({
+                        oscillator: { 
+                            type: "fatsawtooth",
+                            count: 4,
+                            spread: 40
+                        }
+                    });
+                }
+                
+                if (warmSound) {
+                    const warmFilter = new Tone.Filter(800, "lowpass").connect(chorus);
+                    harmonySynth.connect(warmFilter);
+                }
+                
+                if (softClipping) {
+                    const distortion = new Tone.Distortion({
+                        distortion: 0.2,
+                        wet: 0.1
+                    }).connect(chorus);
+                    harmonySynth.connect(distortion);
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const midi = new Midi(e.target.result);
+                    
+                    // Устанавливаем темп
+                    Tone.Transport.bpm.value = midi.header.tempos[0].bpm;
+                    
+                    // Очищаем предыдущие scheduled события
+                    Tone.Transport.cancel();
+                    
+                    // Schedule все ноты
+                    midi.tracks.forEach(track => {
+                        // Выбираем синтезатор в зависимости от инструмента
+                        let currentSynth;
+                        if (track.instrument.number === parseInt(clapInstrumentSelect.value)) {
+                            currentSynth = clapSynth;
+                        } else {
+                            currentSynth = harmonySynth;
+                        }
+                        
+                        track.notes.forEach(note => {
+                            Tone.Transport.schedule(time => {
+                                currentSynth.triggerAttackRelease(
+                                    Tone.Frequency(note.midi, "midi"),
+                                    note.duration,
+                                    time,
+                                    note.velocity
+                                );
+                            }, note.time);
+                        });
+                    });
+                    
+                    // Запускаем воспроизведение
+                    Tone.Transport.start();
+                };
+                
+                reader.readAsArrayBuffer(midiBlob);
+            }
+            
+            // Остановка воспроизведения
+            function stopPlayback() {
+                if (Tone.Transport.state === 'started') {
+                    Tone.Transport.stop();
+                    Tone.Transport.cancel();
+                }
+            }
+            
+            // Обработка нажатия кнопки
+            processBtn.addEventListener('click', function() {
+                if (!audioBuffer) {
+                    statusDiv.innerHTML = '<i class="fas fa-exclamation-circle icon"></i><span>Сначала загрузите аудиофайл</span>';
+                    statusDiv.className = 'status error';
+                    statusDiv.classList.remove('hidden');
+                    return;
+                }
+                
+                processBtn.disabled = true;
+                statusDiv.innerHTML = '<i class="fas fa-cog fa-spin icon"></i><span>Обработка... обнаружение хлопков</span>';
+                statusDiv.className = 'status processing';
+                statusDiv.classList.remove('hidden');
+                progressBar.style.width = '0%';
+                
+                // Имитация обработки для демонстрации
+                setTimeout(function() {
+                    // Обнаружение хлопков
+                    detectedClaps = detectClaps(audioBuffer);
+                    
+                    // Парсим параметры
+                    const clapPitches = clapPitchesInput.value.split(',').map(p => parseInt(p.trim()));
+                    const harmonyChords = harmonyChordsInput.value.split(';').map(
+                        chord => chord.split(',').map(n => parseInt(n.trim()))
+                    ).filter(chord => chord.length > 0);
+                    
+                    const bpm = parseInt(bpmInput.value) || 120;
+                    const clapInstrument = clapInstrumentSelect.value;
+                    const harmonyInstrument = harmonyInstrumentSelect.value;
+                    
+                    // Создаем MIDI
+                    midiBlob = createMIDI(detectedClaps, clapPitches, harmonyChords, bpm, clapInstrument, harmonyInstrument);
+                    
+                    // Отрисовываем обнаруженные хлопки
+                    drawClapMarkers(detectedClaps, audioBuffer.duration);
+                    
+                    statusDiv.innerHTML = '<i class="fas fa-check-circle icon"></i><span>Обнаружено ' + detectedClaps.length + ' хлопков. MIDI сгенерирован.</span>';
+                    statusDiv.className = 'status success';
+                    progressBar.style.width = '100%';
+                    
+                    processBtn.disabled = false;
+                    downloadBtn.disabled = false;
+                    playBtn.disabled = false;
+                }, 1000);
+            });
+            
+            // Скачивание MIDI-файла
+            downloadBtn.addEventListener('click', function() {
+                if (!midiBlob) return;
+                
+                saveAs(midiBlob, 'pleasant_chiptune.mid');
+            });
+            
+            // Воспроизведение MIDI
+            playBtn.addEventListener('click', function() {
+                if (!midiBlob) return;
+                
+                playMIDI(midiBlob);
+                playBtn.disabled = true;
+                stopBtn.disabled = false;
+            });
+            
+            // Остановка воспроизведения
+            stopBtn.addEventListener('click', function() {
+                stopPlayback();
+                playBtn.disabled = false;
+                stopBtn.disabled = true;
+            });
+            
+            // Обработка выбора пресета
+            presetButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const presetName = this.getAttribute('data-preset');
+                    const preset = presets[presetName];
+                    
+                    if (preset) {
+                        bpmInput.value = preset.bpm;
+                        clapPitchesInput.value = preset.clapPitches;
+                        harmonyChordsInput.value = preset.harmonyChords;
+                        
+                        // Скрываем все информационные блоки и показываем только нужный
+                        gameInfoDivs.forEach(info => info.style.display = 'none');
+                        document.querySelector(`.${presetName}-info`).style.display = 'block';
+                        
+                        statusDiv.innerHTML = '<i class="fas fa-check-circle icon"></i><span>Применен пресет: ' + this.textContent.trim() + '</span>';
+                        statusDiv.className = 'status success';
+                        statusDiv.classList.remove('hidden');
+                    }
+                });
+            });
+            
+            // Изначально скрываем все информационные блоки и показываем Tetris
+            gameInfoDivs.forEach(info => info.style.display = 'none');
+            document.querySelector('.potter-info').style.display = 'block';
+            
+            // Устанавливаем начальную громкость
+            if (Tone && Tone.Destination) {
+                Tone.Destination.volume.value = Tone.gainToDb(7 / 10);
+            }
+            
+            // Инициализация Tone.js с обработкой ошибок
+            try {
+                if (Tone && Tone.start) {
+                    Tone.start().then(() => {
+                        console.log("Tone.js initialized");
+                    });
+                }
+            } catch (e) {
+                console.error("Tone.js initialization error:", e);
+            }
+        });
+    </script>
+</body>
+</html>
